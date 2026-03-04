@@ -4,6 +4,7 @@ from aws_cdk import (
   RemovalPolicy,
   Duration,
   aws_cognito as cognito,
+  aws_certificatemanager as acm,
 )
 from constructs import Construct
 
@@ -18,7 +19,8 @@ class CognitoStack(Stack):
     project: str,
     env_name: str,
     domain_name: str,
-    cognito_domain_prefix: str,
+    cognito_auth_domain: str,
+    cognito_certificate_arn: str,
     **kwargs,
   ) -> None:
     super().__init__(scope, construct_id, **kwargs)
@@ -42,11 +44,15 @@ class CognitoStack(Stack):
       sign_in_case_sensitive=False,
     )
 
-    # Cognito Domain (prefix domain for Managed Login)
+    # Cognito Custom Domain
+    cognito_certificate = acm.Certificate.from_certificate_arn(
+      self, "CognitoCertificate", cognito_certificate_arn,
+    )
     user_pool.add_domain(
       "CognitoDomain",
-      cognito_domain=cognito.CognitoDomainOptions(
-        domain_prefix=cognito_domain_prefix,
+      custom_domain=cognito.CustomDomainOptions(
+        domain_name=cognito_auth_domain,
+        certificate=cognito_certificate,
       ),
     )
 
@@ -103,6 +109,6 @@ class CognitoStack(Stack):
     )
     CfnOutput(
       self, "CognitoDomain",
-      value=f"{cognito_domain_prefix}.auth.{Stack.of(self).region}.amazoncognito.com",
+      value=cognito_auth_domain,
       export_name=f"{project}-{env_name}-infra-CognitoDomain",
     )
