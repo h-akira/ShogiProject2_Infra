@@ -2,6 +2,7 @@
 import os
 
 import aws_cdk as cdk
+from aws_cdk import DefaultStackSynthesizer
 
 from stacks import CognitoStack, DistributionStack
 
@@ -18,6 +19,10 @@ cognito_certificate_arn = os.environ["COGNITO_CERTIFICATE_ARN"]
 
 app = cdk.App()
 
+synthesizer = DefaultStackSynthesizer(
+  qualifier=env_name,  # "dev" or "pro"
+)
+
 # Stack 1: Cognito (deploy before backends)
 cognito_stack = CognitoStack(
   app,
@@ -27,6 +32,7 @@ cognito_stack = CognitoStack(
   domain_name=domain_name,
   cognito_auth_domain=cognito_auth_domain,
   cognito_certificate_arn=cognito_certificate_arn,
+  synthesizer=synthesizer,
   env=cdk.Environment(account=account, region=region),
   description="Cognito User Pool for ShogiProject",
 )
@@ -40,6 +46,7 @@ distribution_stack = DistributionStack(
   domain_name=domain_name,
   acm_certificate_arn=acm_certificate_arn,
   hosted_zone_name=hosted_zone_name,
+  synthesizer=DefaultStackSynthesizer(qualifier=env_name),
   env=cdk.Environment(account=account, region=region),
   description="S3 + CloudFront + Route 53 for ShogiProject",
 )
