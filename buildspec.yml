@@ -1,0 +1,24 @@
+version: 0.2
+
+env:
+  variables:
+    CDK_DEFAULT_REGION: "ap-northeast-1"
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.13
+      nodejs: 20
+    commands:
+      - npm install -g aws-cdk
+      - python -m venv .venv
+      - .venv/bin/pip install -r requirements.txt
+
+  build:
+    commands:
+      - cdk synth
+      - cdk deploy --all --require-approval never
+
+  post_build:
+    commands:
+      - echo "CDK deployment completed."
