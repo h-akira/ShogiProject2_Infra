@@ -13,7 +13,8 @@ project = "sgp"
 domain_name = os.environ["DOMAIN_NAME"]
 acm_certificate_arn = os.environ["ACM_CERTIFICATE_ARN"]
 hosted_zone_name = os.environ["HOSTED_ZONE_NAME"]
-cognito_domain_prefix = os.environ["COGNITO_DOMAIN_PREFIX"]
+cognito_auth_domain = os.environ["COGNITO_AUTH_DOMAIN"]
+cognito_certificate_arn = os.environ["COGNITO_CERTIFICATE_ARN"]
 
 app = cdk.App()
 
@@ -24,7 +25,8 @@ cognito_stack = CognitoStack(
   project=project,
   env_name=env_name,
   domain_name=domain_name,
-  cognito_domain_prefix=cognito_domain_prefix,
+  cognito_auth_domain=cognito_auth_domain,
+  cognito_certificate_arn=cognito_certificate_arn,
   env=cdk.Environment(account=account, region=region),
   description="Cognito User Pool for ShogiProject",
 )
