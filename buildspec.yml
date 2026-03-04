@@ -12,7 +12,8 @@ phases:
     commands:
       - npm install -g aws-cdk
       - python -m venv .venv
-      - .venv/bin/pip install -r requirements.txt
+      - source .venv/bin/activate
+      - pip install -r requirements.txt
 
   pre_build:
     commands:
@@ -25,7 +26,6 @@ phases:
           --capabilities CAPABILITY_NAMED_IAM \
           --region ${CDK_DEFAULT_REGION}
       # CDK bootstrap（env ごとの CDKToolkit スタックがなければ実行）
-      - CDK_DEFAULT_ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
       - |
         if ! aws cloudformation describe-stacks --stack-name CDKToolkit-${ENV} --region ${CDK_DEFAULT_REGION} >/dev/null 2>&1; then
           ALL_POLICY_ARNS=$(aws cloudformation describe-stacks \
@@ -33,13 +33,11 @@ phases:
             --region ${CDK_DEFAULT_REGION} \
             --query 'Stacks[0].Outputs[?OutputKey==`AllPolicyArns`].OutputValue' \
             --output text)
-          echo "Bootstrapping with qualifier=${ENV}, policies=${ALL_POLICY_ARNS}"
-          cdk bootstrap aws://${CDK_DEFAULT_ACCOUNT}/${CDK_DEFAULT_REGION} \
+          cdk bootstrap \
             --toolkit-stack-name CDKToolkit-${ENV} \
             --qualifier ${ENV} \
-            --cloudformation-execution-policies "${ALL_POLICY_ARNS}"
-        else
-          echo "CDKToolkit-${ENV} already exists, skipping bootstrap."
+            --cloudformation-execution-policies "${ALL_POLICY_ARNS}" \
+            --region ${CDK_DEFAULT_REGION}
         fi
 
   build:
