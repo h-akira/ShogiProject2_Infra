@@ -14,10 +14,34 @@ phases:
       - python -m venv .venv
       - .venv/bin/pip install -r requirements.txt
 
+  pre_build:
+    commands:
+      - CFN_EXEC_STACK_NAME=stack-sgp-${ENV}-infra-cfn-execution-policies
+      # cfn-execution-policies スタックをデプロイ（初回 or 更新）
+      - |
+        aws cloudformation deploy \
+          --template-file init/cfn-execution-policies.yaml \
+          --stack-name ${CFN_EXEC_STACK_NAME} \
+          --capabilities CAPABILITY_NAMED_IAM \
+          --region ${CDK_DEFAULT_REGION}
+      # CDK bootstrap（env ごとの CDKToolkit スタックがなければ実行）
+      - |
+        if ! aws cloudformation describe-stacks --stack-name CDKToolkit-${ENV} --region ${CDK_DEFAULT_REGION} 2>/dev/null; then
+          ALL_POLICY_ARNS=$(aws cloudformation describe-stacks \
+            --stack-name ${CFN_EXEC_STACK_NAME} \
+            --region ${CDK_DEFAULT_REGION} \
+            --query 'Stacks[0].Outputs[?OutputKey==`AllPolicyArns`].OutputValue' \
+            --output text)
+          cdk bootstrap \
+            --toolkit-stack-name CDKToolkit-${ENV} \
+            --cloudformation-execution-policies "${ALL_POLICY_ARNS}" \
+            --region ${CDK_DEFAULT_REGION}
+        fi
+
   build:
     commands:
-      - cdk synth
-      - cdk deploy --all --require-approval never
+      - cdk synth --toolkit-stack-name CDKToolkit-${ENV}
+      - cdk deploy --toolkit-stack-name CDKToolkit-${ENV} --all --require-approval never
 
   post_build:
     commands:
