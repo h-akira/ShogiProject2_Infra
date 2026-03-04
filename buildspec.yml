@@ -34,6 +34,7 @@ phases:
             --output text)
           cdk bootstrap \
             --toolkit-stack-name CDKToolkit-${ENV} \
+            --qualifier ${ENV} \
             --cloudformation-execution-policies "${ALL_POLICY_ARNS}" \
             --region ${CDK_DEFAULT_REGION}
         fi
