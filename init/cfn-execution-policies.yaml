@@ -1,0 +1,312 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  IAM Policies for CDK CloudFormation Execution Role.
+  This creates multiple managed policies with minimum required permissions
+  for CDK to deploy ShogiProject Infra unit (Cognito + Distribution stacks).
+
+Parameters:
+  PolicyNamePrefix:
+    Type: String
+    Default: policy-sgp-infra-cfn-exec
+    Description: Prefix for IAM policy names
+
+Resources:
+  # =====================================
+  # Policy 1: Cognito
+  # =====================================
+  CognitoPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Sub '${PolicyNamePrefix}-cognito'
+      Description: Cognito permissions for CDK CloudFormation execution
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: CognitoUserPool
+            Effect: Allow
+            Action:
+              - cognito-idp:CreateUserPool
+              - cognito-idp:DeleteUserPool
+              - cognito-idp:DescribeUserPool
+              - cognito-idp:UpdateUserPool
+              - cognito-idp:SetUserPoolMfaConfig
+              - cognito-idp:GetUserPoolMfaConfig
+            Resource: !Sub 'arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/*'
+
+          - Sid: CognitoUserPoolClient
+            Effect: Allow
+            Action:
+              - cognito-idp:CreateUserPoolClient
+              - cognito-idp:DeleteUserPoolClient
+              - cognito-idp:DescribeUserPoolClient
+              - cognito-idp:UpdateUserPoolClient
+            Resource: !Sub 'arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/*'
+
+          - Sid: CognitoUserPoolDomain
+            Effect: Allow
+            Action:
+              - cognito-idp:CreateUserPoolDomain
+              - cognito-idp:DeleteUserPoolDomain
+              - cognito-idp:DescribeUserPoolDomain
+              - cognito-idp:UpdateUserPoolDomain
+            Resource: !Sub 'arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/*'
+
+          - Sid: CognitoTags
+            Effect: Allow
+            Action:
+              - cognito-idp:ListTagsForResource
+              - cognito-idp:TagResource
+              - cognito-idp:UntagResource
+            Resource: !Sub 'arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/*'
+
+  # =====================================
+  # Policy 2: S3 & CloudFront & Route53
+  # =====================================
+  StoragePolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Sub '${PolicyNamePrefix}-storage'
+      Description: S3, CloudFront, and Route53 permissions for CDK CloudFormation execution
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: S3BucketManagement
+            Effect: Allow
+            Action:
+              - s3:CreateBucket
+              - s3:DeleteBucket
+              - s3:ListBucket
+              - s3:GetBucketLocation
+            Resource: 'arn:aws:s3:::*'
+
+          - Sid: S3BucketConfiguration
+            Effect: Allow
+            Action:
+              - s3:PutBucketPolicy
+              - s3:DeleteBucketPolicy
+              - s3:GetBucketPolicy
+              - s3:PutBucketPublicAccessBlock
+              - s3:GetBucketPublicAccessBlock
+              - s3:PutBucketVersioning
+              - s3:GetBucketVersioning
+              - s3:PutBucketEncryption
+              - s3:GetBucketEncryption
+              - s3:PutBucketCORS
+              - s3:GetBucketCORS
+              - s3:PutBucketTagging
+              - s3:GetBucketTagging
+              - s3:PutBucketLogging
+              - s3:GetBucketLogging
+              - s3:PutLifecycleConfiguration
+              - s3:GetLifecycleConfiguration
+            Resource: 'arn:aws:s3:::*'
+
+          - Sid: S3ObjectOperations
+            Effect: Allow
+            Action:
+              - s3:GetObject
+              - s3:PutObject
+              - s3:DeleteObject
+              - s3:GetObjectVersion
+              - s3:DeleteObjectVersion
+            Resource: 'arn:aws:s3:::*/*'
+
+          - Sid: CloudFrontDistribution
+            Effect: Allow
+            Action:
+              - cloudfront:CreateDistribution
+              - cloudfront:DeleteDistribution
+              - cloudfront:GetDistribution
+              - cloudfront:GetDistributionConfig
+              - cloudfront:UpdateDistribution
+            Resource: '*'
+
+          - Sid: CloudFrontOriginAccessControl
+            Effect: Allow
+            Action:
+              - cloudfront:CreateOriginAccessControl
+              - cloudfront:DeleteOriginAccessControl
+              - cloudfront:GetOriginAccessControl
+              - cloudfront:GetOriginAccessControlConfig
+              - cloudfront:UpdateOriginAccessControl
+            Resource: '*'
+
+          - Sid: CloudFrontTags
+            Effect: Allow
+            Action:
+              - cloudfront:TagResource
+              - cloudfront:UntagResource
+              - cloudfront:ListTagsForResource
+            Resource: '*'
+
+          - Sid: Route53RecordManagement
+            Effect: Allow
+            Action:
+              - route53:GetHostedZone
+              - route53:ListHostedZones
+              - route53:ListHostedZonesByName
+              - route53:GetChange
+              - route53:ChangeResourceRecordSets
+              - route53:ListResourceRecordSets
+            Resource: '*'
+
+  # =====================================
+  # Policy 3: SSM & ACM & CloudWatch Logs
+  # =====================================
+  ConfigPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Sub '${PolicyNamePrefix}-config'
+      Description: SSM, ACM, and CloudWatch Logs permissions for CDK CloudFormation execution
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: SSMParameterWrite
+            Effect: Allow
+            Action:
+              - ssm:PutParameter
+              - ssm:DeleteParameter
+            Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*'
+
+          - Sid: SSMParameterRead
+            Effect: Allow
+            Action:
+              - ssm:GetParameter
+              - ssm:GetParameters
+              - ssm:GetParametersByPath
+              - ssm:DescribeParameters
+            Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*'
+
+          - Sid: SSMParameterTags
+            Effect: Allow
+            Action:
+              - ssm:AddTagsToResource
+              - ssm:RemoveTagsFromResource
+              - ssm:ListTagsForResource
+            Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*'
+
+          - Sid: ACMCertificateRead
+            Effect: Allow
+            Action:
+              - acm:DescribeCertificate
+              - acm:ListCertificates
+              - acm:GetCertificate
+              - acm:ListTagsForCertificate
+            Resource: '*'
+
+          - Sid: CloudWatchLogs
+            Effect: Allow
+            Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              - logs:DeleteLogGroup
+              - logs:DescribeLogGroups
+              - logs:DescribeLogStreams
+              - logs:PutRetentionPolicy
+              - logs:DeleteRetentionPolicy
+              - logs:TagResource
+              - logs:UntagResource
+              - logs:ListTagsForResource
+            Resource:
+              - !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*'
+              - !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*:*'
+
+  # =====================================
+  # Policy 4: IAM
+  # =====================================
+  IAMPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Sub '${PolicyNamePrefix}-iam'
+      Description: IAM permissions for CDK CloudFormation execution
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: IAMRoleManagement
+            Effect: Allow
+            Action:
+              - iam:CreateRole
+              - iam:DeleteRole
+              - iam:GetRole
+              - iam:UpdateRole
+              - iam:UpdateAssumeRolePolicy
+            Resource: !Sub 'arn:aws:iam::${AWS::AccountId}:role/*'
+
+          - Sid: IAMRolePolicyManagement
+            Effect: Allow
+            Action:
+              - iam:PutRolePolicy
+              - iam:DeleteRolePolicy
+              - iam:GetRolePolicy
+              - iam:AttachRolePolicy
+              - iam:DetachRolePolicy
+              - iam:ListRolePolicies
+              - iam:ListAttachedRolePolicies
+            Resource: !Sub 'arn:aws:iam::${AWS::AccountId}:role/*'
+
+          - Sid: IAMRoleTags
+            Effect: Allow
+            Action:
+              - iam:TagRole
+              - iam:UntagRole
+            Resource: !Sub 'arn:aws:iam::${AWS::AccountId}:role/*'
+
+          - Sid: IAMPolicyManagement
+            Effect: Allow
+            Action:
+              - iam:CreatePolicy
+              - iam:DeletePolicy
+              - iam:GetPolicy
+              - iam:GetPolicyVersion
+              - iam:ListPolicyVersions
+            Resource: !Sub 'arn:aws:iam::${AWS::AccountId}:policy/*'
+
+          - Sid: IAMPolicyVersionManagement
+            Effect: Allow
+            Action:
+              - iam:CreatePolicyVersion
+              - iam:DeletePolicyVersion
+            Resource: !Sub 'arn:aws:iam::${AWS::AccountId}:policy/*'
+
+          - Sid: IAMPolicyTags
+            Effect: Allow
+            Action:
+              - iam:TagPolicy
+              - iam:UntagPolicy
+            Resource: !Sub 'arn:aws:iam::${AWS::AccountId}:policy/*'
+
+          - Sid: IAMPassRole
+            Effect: Allow
+            Action:
+              - iam:PassRole
+            Resource: !Sub 'arn:aws:iam::${AWS::AccountId}:role/stack-*'
+
+Outputs:
+  CognitoPolicyArn:
+    Description: ARN of Cognito policy
+    Value: !Ref CognitoPolicy
+    Export:
+      Name: !Sub '${AWS::StackName}-CognitoPolicyArn'
+
+  StoragePolicyArn:
+    Description: ARN of Storage (S3 & CloudFront & Route53) policy
+    Value: !Ref StoragePolicy
+    Export:
+      Name: !Sub '${AWS::StackName}-StoragePolicyArn'
+
+  ConfigPolicyArn:
+    Description: ARN of Config (SSM & ACM & CloudWatch Logs) policy
+    Value: !Ref ConfigPolicy
+    Export:
+      Name: !Sub '${AWS::StackName}-ConfigPolicyArn'
+
+  IAMPolicyArn:
+    Description: ARN of IAM policy
+    Value: !Ref IAMPolicy
+    Export:
+      Name: !Sub '${AWS::StackName}-IAMPolicyArn'
+
+  AllPolicyArns:
+    Description: Comma-separated list of all policy ARNs for CDK bootstrap
+    Value: !Sub '${CognitoPolicy},${StoragePolicy},${ConfigPolicy},${IAMPolicy}'
