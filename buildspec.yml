@@ -39,11 +39,27 @@ phases:
             --cloudformation-execution-policies "${ALL_POLICY_ARNS}" \
             --region ${CDK_DEFAULT_REGION}
         fi
+      # バックエンドのエクスポートが存在するか確認
+      - |
+        MAIN_API_EXPORT=$(aws cloudformation list-exports \
+          --region ${CDK_DEFAULT_REGION} \
+          --query "Exports[?Name=='sgp-${ENV}-backend-main-ApiGatewayId'].Value" \
+          --output text)
+        ANALYSIS_API_EXPORT=$(aws cloudformation list-exports \
+          --region ${CDK_DEFAULT_REGION} \
+          --query "Exports[?Name=='sgp-${ENV}-backend-analysis-ApiGatewayId'].Value" \
+          --output text)
+        if [ -n "$MAIN_API_EXPORT" ] && [ -n "$ANALYSIS_API_EXPORT" ]; then
+          export BACKENDS_DEPLOYED=true
+        else
+          export BACKENDS_DEPLOYED=false
+        fi
+        echo "BACKENDS_DEPLOYED=${BACKENDS_DEPLOYED}"
 
   build:
     commands:
-      - cdk synth --toolkit-stack-name CDKToolkit-${ENV}
-      - cdk deploy --toolkit-stack-name CDKToolkit-${ENV} --all --require-approval never
+      - cdk synth --toolkit-stack-name CDKToolkit-${ENV} -c backends_deployed=${BACKENDS_DEPLOYED}
+      - cdk deploy --toolkit-stack-name CDKToolkit-${ENV} --all --require-approval never -c backends_deployed=${BACKENDS_DEPLOYED}
 
   post_build:
     commands:

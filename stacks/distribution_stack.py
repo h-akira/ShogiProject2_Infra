@@ -25,6 +25,7 @@ class DistributionStack(Stack):
     domain_name: str,
     acm_certificate_arn: str,
     hosted_zone_name: str,
+    backends_deployed: bool = False,
     **kwargs,
   ) -> None:
     super().__init__(scope, construct_id, **kwargs)
@@ -37,44 +38,38 @@ class DistributionStack(Stack):
       block_public_access=s3.BlockPublicAccess.BLOCK_ALL,
     )
 
-    # Import API Gateway IDs from backend stacks
-    main_api_id = Fn.import_value(
-      f"{project}-{env_name}-backend-main-ApiGatewayId"
-    )
-    main_api_stage = Fn.import_value(
-      f"{project}-{env_name}-backend-main-ApiGatewayStageName"
-    )
-    analysis_api_id = Fn.import_value(
-      f"{project}-{env_name}-backend-analysis-ApiGatewayId"
-    )
-    analysis_api_stage = Fn.import_value(
-      f"{project}-{env_name}-backend-analysis-ApiGatewayStageName"
-    )
-
     # ACM Certificate (us-east-1)
     certificate = acm.Certificate.from_certificate_arn(
       self, "Certificate", acm_certificate_arn,
     )
 
-    # API Gateway origins (REST API execute-api endpoint)
-    region = Stack.of(self).region
-    main_api_origin = origins.HttpOrigin(
-      Fn.join("", [main_api_id, ".execute-api.", region, ".amazonaws.com"]),
-      origin_path=Fn.join("", ["/", main_api_stage]),
-    )
-    analysis_api_origin = origins.HttpOrigin(
-      Fn.join("", [analysis_api_id, ".execute-api.", region, ".amazonaws.com"]),
-      origin_path=Fn.join("", ["/", analysis_api_stage]),
-    )
+    # API Gateway origins (conditional)
+    additional_behaviors = {}
+    if backends_deployed:
+      main_api_id = Fn.import_value(
+        f"{project}-{env_name}-backend-main-ApiGatewayId"
+      )
+      main_api_stage = Fn.import_value(
+        f"{project}-{env_name}-backend-main-ApiGatewayStageName"
+      )
+      analysis_api_id = Fn.import_value(
+        f"{project}-{env_name}-backend-analysis-ApiGatewayId"
+      )
+      analysis_api_stage = Fn.import_value(
+        f"{project}-{env_name}-backend-analysis-ApiGatewayStageName"
+      )
 
-    # CloudFront Distribution
-    distribution = cloudfront.Distribution(
-      self, "Distribution",
-      default_behavior=cloudfront.BehaviorOptions(
-        origin=origins.S3BucketOrigin.with_origin_access_control(bucket),
-        viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-      ),
-      additional_behaviors={
+      region = Stack.of(self).region
+      main_api_origin = origins.HttpOrigin(
+        Fn.join("", [main_api_id, ".execute-api.", region, ".amazonaws.com"]),
+        origin_path=Fn.join("", ["/", main_api_stage]),
+      )
+      analysis_api_origin = origins.HttpOrigin(
+        Fn.join("", [analysis_api_id, ".execute-api.", region, ".amazonaws.com"]),
+        origin_path=Fn.join("", ["/", analysis_api_stage]),
+      )
+
+      additional_behaviors = {
         "/api/v1/main/*": cloudfront.BehaviorOptions(
           origin=main_api_origin,
           allowed_methods=cloudfront.AllowedMethods.ALLOW_ALL,
@@ -89,7 +84,16 @@ class DistributionStack(Stack):
           origin_request_policy=cloudfront.OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
           viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         ),
-      },
+      }
+
+    # CloudFront Distribution
+    distribution = cloudfront.Distribution(
+      self, "Distribution",
+      default_behavior=cloudfront.BehaviorOptions(
+        origin=origins.S3BucketOrigin.with_origin_access_control(bucket),
+        viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+      ),
+      additional_behaviors=additional_behaviors if additional_behaviors else None,
       domain_names=[domain_name],
       certificate=certificate,
       default_root_object="index.html",
