@@ -75,7 +75,7 @@ class CognitoStack(Stack):
 
     # User Pool Client (SPA - no secret, Authorization Code + PKCE)
     callback_url = f"https://{domain_name}/callback"
-    logout_url = f"https://{domain_name}"
+    logout_url = f"https://{domain_name}/"
 
     user_pool_client = user_pool.add_client(
       "UserPoolClient",
