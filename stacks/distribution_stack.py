@@ -141,3 +141,8 @@ class DistributionStack(Stack):
       value=distribution.distribution_domain_name,
       export_name=f"{project}-{env_name}-infra-CloudFrontDomainName",
     )
+    CfnOutput(
+      self, "DomainName",
+      value=domain_name,
+      export_name=f"{project}-{env_name}-infra-DomainName",
+    )
