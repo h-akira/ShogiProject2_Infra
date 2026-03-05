@@ -47,9 +47,14 @@ Resources:
             Action:
               - cognito-idp:CreateUserPoolDomain
               - cognito-idp:DeleteUserPoolDomain
-              - cognito-idp:DescribeUserPoolDomain
               - cognito-idp:UpdateUserPoolDomain
             Resource: !Sub 'arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/*'
+
+          - Sid: CognitoUserPoolDomainDescribe
+            Effect: Allow
+            Action:
+              - cognito-idp:DescribeUserPoolDomain
+            Resource: '*'
 
           - Sid: CognitoTags
             Effect: Allow
