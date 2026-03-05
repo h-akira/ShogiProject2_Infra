@@ -52,6 +52,7 @@ cognito_stack = CognitoStack(
   domain_name=domain_name,
   cognito_auth_domain=cognito_auth_domain,
   cognito_certificate_arn=cognito_certificate_arn,
+  hosted_zone_name=hosted_zone_name,
   synthesizer=synthesizer,
   env=cdk.Environment(account=account, region=region),
   description="Cognito User Pool for ShogiProject",

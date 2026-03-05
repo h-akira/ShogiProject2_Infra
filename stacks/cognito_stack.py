@@ -5,6 +5,8 @@ from aws_cdk import (
   Duration,
   aws_cognito as cognito,
   aws_certificatemanager as acm,
+  aws_route53 as route53,
+  aws_route53_targets as targets,
 )
 from constructs import Construct
 
@@ -21,6 +23,7 @@ class CognitoStack(Stack):
     domain_name: str,
     cognito_auth_domain: str,
     cognito_certificate_arn: str,
+    hosted_zone_name: str,
     **kwargs,
   ) -> None:
     super().__init__(scope, construct_id, **kwargs)
@@ -48,11 +51,25 @@ class CognitoStack(Stack):
     cognito_certificate = acm.Certificate.from_certificate_arn(
       self, "CognitoCertificate", cognito_certificate_arn,
     )
-    user_pool.add_domain(
+    user_pool_domain = user_pool.add_domain(
       "CognitoDomain",
       custom_domain=cognito.CustomDomainOptions(
         domain_name=cognito_auth_domain,
         certificate=cognito_certificate,
+      ),
+    )
+
+    # Route 53 Alias Record for Cognito Custom Domain
+    hosted_zone = route53.HostedZone.from_lookup(
+      self, "HostedZone",
+      domain_name=hosted_zone_name,
+    )
+    route53.ARecord(
+      self, "CognitoAliasRecord",
+      zone=hosted_zone,
+      record_name=cognito_auth_domain,
+      target=route53.RecordTarget.from_alias(
+        targets.UserPoolDomainTarget(user_pool_domain),
       ),
     )
 
