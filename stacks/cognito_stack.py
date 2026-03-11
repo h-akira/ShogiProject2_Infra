@@ -94,6 +94,7 @@ class CognitoStack(Stack):
           cognito.OAuthScope.OPENID,
           cognito.OAuthScope.EMAIL,
           cognito.OAuthScope.PROFILE,
+          cognito.OAuthScope.COGNITO_ADMIN,
         ],
         callback_urls=[callback_url],
         logout_urls=[logout_url],
