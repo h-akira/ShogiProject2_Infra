@@ -104,9 +104,9 @@ class DistributionStack(Stack):
     else:
       ip_check_code = ""
 
-    spa_rewrite_function = cloudfront.Function(
-      self, "SpaRewriteFunction",
-      function_name=f"cf-func-{project}-{env_name}-spa-rewrite",
+    viewer_request_function = cloudfront.Function(
+      self, "ViewerRequestFunction",
+      function_name=f"cf-func-{project}-{env_name}-viewer-request",
       code=cloudfront.FunctionCode.from_inline(
         "function handler(event){"
         "var request=event.request;"
@@ -128,7 +128,7 @@ class DistributionStack(Stack):
         viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         function_associations=[
           cloudfront.FunctionAssociation(
-            function=spa_rewrite_function,
+            function=viewer_request_function,
             event_type=cloudfront.FunctionEventType.VIEWER_REQUEST,
           ),
         ],
