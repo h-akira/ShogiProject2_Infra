@@ -22,6 +22,7 @@ app = cdk.App()
 # CDK context: バックエンドがデプロイ済みかどうか
 # buildspec.yml から -c backends_deployed=true/false で渡される
 backends_deployed = app.node.try_get_context("backends_deployed") == "true"
+allowed_ips = app.node.try_get_context("allowed_ips") or ""
 
 synthesizer = DefaultStackSynthesizer(
   qualifier=env_name,  # "dev" or "pro"
@@ -38,6 +39,7 @@ distribution_stack = DistributionStack(
   acm_certificate_arn=acm_certificate_arn,
   hosted_zone_name=hosted_zone_name,
   backends_deployed=backends_deployed,
+  allowed_ips=allowed_ips,
   synthesizer=DefaultStackSynthesizer(qualifier=env_name),
   env=cdk.Environment(account=account, region=region),
   description="S3 + CloudFront + Route 53 for ShogiProject",

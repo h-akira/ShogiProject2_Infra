@@ -26,6 +26,7 @@ class DistributionStack(Stack):
     acm_certificate_arn: str,
     hosted_zone_name: str,
     backends_deployed: bool = False,
+    allowed_ips: str = "",
     **kwargs,
   ) -> None:
     super().__init__(scope, construct_id, **kwargs)
@@ -86,21 +87,35 @@ class DistributionStack(Stack):
         ),
       }
 
-    # CloudFront Functions: SPA fallback
-    # Vue Router (History mode) のルートに直接アクセスされた場合、
-    # S3 にファイルが存在しないため、リクエスト段階で /index.html にリライトする。
-    # /api/ パスと拡張子付きパス（.js, .css 等）はそのまま通す。
+    # 許可IPリストを生成
+    ip_list = [ip.strip() for ip in allowed_ips.split(",") if ip.strip()] if allowed_ips else []
+
+    # CloudFront Functions: IP制限 + SPA fallback
+    if ip_list:
+      ip_array_js = ",".join(f"'{ip}'" for ip in ip_list)
+      ip_check_code = (
+        f"var allowedIps=[{ip_array_js}];"
+        "var ip=event.viewer.ip;"
+        "if(allowedIps.indexOf(ip)===-1){"
+        "return{statusCode:403,statusDescription:'Forbidden',"
+        "body:{encoding:'text',data:'Access Denied'}};"
+        "}"
+      )
+    else:
+      ip_check_code = ""
+
     spa_rewrite_function = cloudfront.Function(
       self, "SpaRewriteFunction",
       function_name=f"cf-func-{project}-{env_name}-spa-rewrite",
       code=cloudfront.FunctionCode.from_inline(
-        "function handler(event) {"
-        "  var request = event.request;"
-        "  var uri = request.uri;"
-        "  if (!uri.startsWith('/api/') && !uri.includes('.')) {"
-        "    request.uri = '/index.html';"
-        "  }"
-        "  return request;"
+        "function handler(event){"
+        "var request=event.request;"
+        f"{ip_check_code}"
+        "var uri=request.uri;"
+        "if(!uri.startsWith('/api/')&&!uri.includes('.')){"
+        "request.uri='/index.html';"
+        "}"
+        "return request;"
         "}"
       ),
     )

@@ -58,8 +58,8 @@ phases:
 
   build:
     commands:
-      - cdk synth --toolkit-stack-name CDKToolkit-${ENV} -c backends_deployed=${BACKENDS_DEPLOYED}
-      - cdk deploy --toolkit-stack-name CDKToolkit-${ENV} --all --require-approval never -c backends_deployed=${BACKENDS_DEPLOYED}
+      - cdk synth --toolkit-stack-name CDKToolkit-${ENV} -c backends_deployed=${BACKENDS_DEPLOYED} -c allowed_ips="${ALLOWED_IPS}"
+      - cdk deploy --toolkit-stack-name CDKToolkit-${ENV} --all --require-approval never -c backends_deployed=${BACKENDS_DEPLOYED} -c allowed_ips="${ALLOWED_IPS}"
 
   post_build:
     commands:
