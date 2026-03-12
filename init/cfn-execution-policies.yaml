@@ -126,6 +126,17 @@ Resources:
               - cloudfront:UpdateDistribution
             Resource: '*'
 
+          - Sid: CloudFrontFunction
+            Effect: Allow
+            Action:
+              - cloudfront:CreateFunction
+              - cloudfront:DeleteFunction
+              - cloudfront:DescribeFunction
+              - cloudfront:GetFunction
+              - cloudfront:PublishFunction
+              - cloudfront:UpdateFunction
+            Resource: '*'
+
           - Sid: CloudFrontOriginAccessControl
             Effect: Allow
             Action:
