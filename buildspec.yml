@@ -24,21 +24,20 @@ phases:
           --template-file init/cfn-execution-policies.yaml \
           --stack-name ${CFN_EXEC_STACK_NAME} \
           --capabilities CAPABILITY_NAMED_IAM \
+          --parameter-overrides Env=${ENV} \
           --region ${CDK_DEFAULT_REGION}
-      # CDK bootstrap（env ごとの CDKToolkit スタックがなければ実行）
+      # CDK bootstrap（冪等のため毎回実行し、ポリシー ARN の変更を反映）
       - |
-        if ! aws cloudformation describe-stacks --stack-name CDKToolkit-${ENV} --region ${CDK_DEFAULT_REGION} >/dev/null 2>&1; then
-          ALL_POLICY_ARNS=$(aws cloudformation describe-stacks \
-            --stack-name ${CFN_EXEC_STACK_NAME} \
-            --region ${CDK_DEFAULT_REGION} \
-            --query 'Stacks[0].Outputs[?OutputKey==`AllPolicyArns`].OutputValue' \
-            --output text)
-          cdk bootstrap \
-            --toolkit-stack-name CDKToolkit-${ENV} \
-            --qualifier ${ENV} \
-            --cloudformation-execution-policies "${ALL_POLICY_ARNS}" \
-            --region ${CDK_DEFAULT_REGION}
-        fi
+        ALL_POLICY_ARNS=$(aws cloudformation describe-stacks \
+          --stack-name ${CFN_EXEC_STACK_NAME} \
+          --region ${CDK_DEFAULT_REGION} \
+          --query 'Stacks[0].Outputs[?OutputKey==`AllPolicyArns`].OutputValue' \
+          --output text)
+        cdk bootstrap \
+          --toolkit-stack-name CDKToolkit-${ENV} \
+          --qualifier ${ENV} \
+          --cloudformation-execution-policies "${ALL_POLICY_ARNS}" \
+          --region ${CDK_DEFAULT_REGION}
       # バックエンドのエクスポートが存在するか確認
       - |
         MAIN_API_EXPORT=$(aws cloudformation list-exports \

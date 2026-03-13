@@ -5,10 +5,10 @@ Description: >
   for CDK to deploy ShogiProject Infra unit (Cognito + Distribution stacks).
 
 Parameters:
-  PolicyNamePrefix:
+  Env:
     Type: String
-    Default: policy-sgp-infra-cfn-exec
-    Description: Prefix for IAM policy names
+    Default: dev
+    Description: Environment identifier (dev, pro)
 
 Resources:
   # =====================================
@@ -17,7 +17,7 @@ Resources:
   CognitoPolicy:
     Type: AWS::IAM::ManagedPolicy
     Properties:
-      ManagedPolicyName: !Sub '${PolicyNamePrefix}-cognito'
+      ManagedPolicyName: !Sub 'policy-sgp-${Env}-infra-cfn-exec-cognito'
       Description: Cognito permissions for CDK CloudFormation execution
       PolicyDocument:
         Version: '2012-10-17'
@@ -70,7 +70,7 @@ Resources:
   StoragePolicy:
     Type: AWS::IAM::ManagedPolicy
     Properties:
-      ManagedPolicyName: !Sub '${PolicyNamePrefix}-storage'
+      ManagedPolicyName: !Sub 'policy-sgp-${Env}-infra-cfn-exec-storage'
       Description: S3, CloudFront, and Route53 permissions for CDK CloudFormation execution
       PolicyDocument:
         Version: '2012-10-17'
@@ -172,7 +172,7 @@ Resources:
   ConfigPolicy:
     Type: AWS::IAM::ManagedPolicy
     Properties:
-      ManagedPolicyName: !Sub '${PolicyNamePrefix}-config'
+      ManagedPolicyName: !Sub 'policy-sgp-${Env}-infra-cfn-exec-config'
       Description: SSM, ACM, and CloudWatch Logs permissions for CDK CloudFormation execution
       PolicyDocument:
         Version: '2012-10-17'
@@ -234,7 +234,7 @@ Resources:
   IAMPolicy:
     Type: AWS::IAM::ManagedPolicy
     Properties:
-      ManagedPolicyName: !Sub '${PolicyNamePrefix}-iam'
+      ManagedPolicyName: !Sub 'policy-sgp-${Env}-infra-cfn-exec-iam'
       Description: IAM permissions for CDK CloudFormation execution
       PolicyDocument:
         Version: '2012-10-17'

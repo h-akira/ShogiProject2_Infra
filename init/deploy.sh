@@ -17,7 +17,8 @@ aws cloudformation deploy \
   --region "$REGION" \
   --template-file "$SCRIPT_DIR/cfn-execution-policies.yaml" \
   --stack-name "$STACK_NAME" \
-  --capabilities CAPABILITY_NAMED_IAM
+  --capabilities CAPABILITY_NAMED_IAM \
+  --parameter-overrides "Env=$ENV"
 
 echo ""
 echo "✓ Done"
